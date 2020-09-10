@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 import numpy as np
-
+import random as rand
 BACKGROUND_FILEPATH = os.path.join("Ommniglot_dataset", "images_background")
 EVALUATION_FILEPATH = os.path.join("Ommniglot_dataset", "images_evaluation")
 
@@ -29,32 +29,31 @@ def initialize_dictionary():
 
 train_dict = initialize_dictionary()
 
-
 def generate_pairs(alphabet_name, index_of_character, index_of_image):
     current_character = train_dict[alphabet_name]["characters"][index_of_character]
     current_image = train_dict[alphabet_name][current_character][index_of_image]
     anchor = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, current_character, current_image))
     anchor = np.asarray(anchor).astype(np.float32)
-    print(current_image)
+    #print(current_image)
     output = [[], []]
-    numberOfCharacters = len(train_dict[alphabet_name]["characters"])
-    for char_index in range(index_of_character, numberOfCharacters):
-        if index_of_image != 0 and index_of_character == char_index:
-            for image in range(index_of_image + 1, 20):
-                character = train_dict[alphabet_name]["characters"][char_index]
-                filepath = train_dict[alphabet_name][character][image]
-                curr_image = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, character, filepath))
-                curr_image = np.asarray(curr_image).astype(np.float32)
 
+    characters = rand.sample(train_dict[alphabet_name]["characters"], 4)
+
+    print(os.path.join(alphabet_name,train_dict[alphabet_name]["characters"][index_of_character]))
+    characters.append(train_dict[alphabet_name]["characters"][index_of_character])
+
+    for item in characters:
+        if item == train_dict[alphabet_name]["characters"][index_of_character]:
+            iter_images = [k for k in train_dict[alphabet_name][item]]
+            for image in iter_images:
+                curr_image = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, item, image))
+                curr_image = np.asarray(curr_image).astype(np.float32)
                 output[0].append([anchor, curr_image])
-
         else:
-            for image in range(0, 20):
-                character = train_dict[alphabet_name]["characters"][char_index]
-                filepath = train_dict[alphabet_name][character][image]
-                curr_image = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, character, filepath))
+            iter_images = rand.sample(train_dict[alphabet_name][item], 5)
+            for image in iter_images:
+                curr_image = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, item, image))
                 curr_image = np.asarray(curr_image).astype(np.float32)
-
                 output[1].append([anchor, curr_image])
 
     return output
@@ -68,6 +67,7 @@ for alphabet in os.listdir(BACKGROUND_FILEPATH):
             result = generate_pairs(alphabet, index_character, index_image)
             bins[0].extend(result[0])
             bins[1].extend(result[1])
+
 
 x = np.asarray(bins[0])
 y = np.asarray(bins[1])
