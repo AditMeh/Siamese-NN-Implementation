@@ -33,25 +33,43 @@ train_dict = initialize_dictionary()
 def generate_pairs(alphabet_name, index_of_character, index_of_image):
     current_character = train_dict[alphabet_name]["characters"][index_of_character]
     current_image = train_dict[alphabet_name][current_character][index_of_image]
-    anchor = os.path.join(alphabet_name, current_character, current_image)
-    print(anchor)
-
+    anchor = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, current_character, current_image))
+    anchor = np.asarray(anchor).astype(np.float32)
+    print(current_image)
+    output = [[], []]
     numberOfCharacters = len(train_dict[alphabet_name]["characters"])
     for char_index in range(index_of_character, numberOfCharacters):
         if index_of_image != 0 and index_of_character == char_index:
             for image in range(index_of_image + 1, 20):
                 character = train_dict[alphabet_name]["characters"][char_index]
                 filepath = train_dict[alphabet_name][character][image]
-                print(os.path.join(character, filepath))
+                curr_image = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, character, filepath))
+                curr_image = np.asarray(curr_image).astype(np.float32)
+
+                output[0].append([anchor, curr_image])
+
         else:
             for image in range(0, 20):
                 character = train_dict[alphabet_name]["characters"][char_index]
                 filepath = train_dict[alphabet_name][character][image]
-                print(os.path.join(character, filepath))
+                curr_image = Image.open(os.path.join(BACKGROUND_FILEPATH, alphabet_name, character, filepath))
+                curr_image = np.asarray(curr_image).astype(np.float32)
+
+                output[1].append([anchor, curr_image])
+
+    return output
 
 
 for alphabet in os.listdir(BACKGROUND_FILEPATH):
+    bins = [[], []]
+    print(alphabet)
     for index_character, character_path in enumerate(os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet))):
         for index_image, image in enumerate(os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet, character_path))):
-            generate_pairs(alphabet, index_character, index_image)
-    break
+            result = generate_pairs(alphabet, index_character, index_image)
+            bins[0].extend(result[0])
+            bins[1].extend(result[1])
+
+x = np.asarray(bins[0])
+y = np.asarray(bins[1])
+print(x.shape)
+print(y.shape)
