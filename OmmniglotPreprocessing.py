@@ -34,46 +34,61 @@ train_dict = initialize_dictionary()
 classes = train_dict.keys()
 classes_dict = {value: i for i, value in enumerate(os.listdir(BACKGROUND_FILEPATH))}
 
-print(classes_dict)
+
+def random_sampler_with_exclusion(sample_size, exclusion, list_to_sample):
+    remove_index = list_to_sample.index(exclusion)
+    del list_to_sample[remove_index]
+
+    sample = rand.sample(list_to_sample, sample_size)
+    sample.append(exclusion)
+    return sample
 
 
 def generate_pairs():
-    bins = []
+    bins_same = []
+    bins_different = []
     for alphabet in os.listdir(BACKGROUND_FILEPATH):
-        output = [[], []]
         for character in os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet)):
-            for image in os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet, character)):
+            sampled_characters = random_sampler_with_exclusion(5, character,
+                                                               os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet)))
+            print(os.path.join(alphabet, character))
+            for iter_character in sampled_characters:
+                if iter_character == character:
+                    sampled_images = rand.sample(os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet, character)), 18)
+                    for sampled_images_index in range(len(sampled_images) - 1):
+                        image_1 = np.array(io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, character,
+                                                                  sampled_images[sampled_images_index])))
 
-                anchor = io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, character, image))
-                anchor = np.asarray(anchor)
+                        image_2 = np.array(io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, character,
+                                                                  sampled_images[sampled_images_index + 1])))
+                        bins_same.append([image_1, image_2])
+                else:
+                    sampled_images_char = rand.sample(os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet, character))
+                                                      , 5)
+                    sampled_images_iter_char = rand.sample(
+                        os.listdir(os.path.join(BACKGROUND_FILEPATH, alphabet, iter_character))
+                        , 5)
 
-                characters = rand.sample(train_dict[alphabet]["characters"], 4)
+                    for sampled_images_index in range(len(sampled_images_char) - 1):
+                        image_1 = np.asarray(io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, character,
+                                                                    sampled_images_char[sampled_images_index])))
 
-                print(os.path.join(alphabet, character, image))
-                characters.append(character)
+                        image_2 = np.asarray(io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, iter_character,
+                                                                    sampled_images_iter_char[
+                                                                        sampled_images_index + 1])))
+                        bins_different.append([image_1, image_2])
 
-                for item in characters:
-                    if item == character:
-                        iter_images = [k for k in train_dict[alphabet][item]]
-                        for image_sample in iter_images:
-                            curr_image = io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, item, image_sample))
-                            curr_image = np.asarray(curr_image)
-                            output[0].append([anchor, curr_image])
-
-                    else:
-                        iter_images = rand.sample(train_dict[alphabet][item], 5)
-                        for image_sample in iter_images:
-                            curr_image = io.imread(os.path.join(BACKGROUND_FILEPATH, alphabet, item, image_sample))
-                            curr_image = np.asarray(curr_image)
-                            output[1].append([anchor, curr_image])
-        bins.append(output)
-
-    return bins
+    return bins_same, bins_different
 
 
-answer = np.asarray(generate_pairs())
+bins_same, bins_different = generate_pairs()
+bins_same = np.asarray(bins_same).astype(np.float32)
+bins_different = np.asarray(bins_different).astype(np.float32)
 
 
+
+"""
 pickle_out = open("dataset.pickle", "wb")
 pickle.dump(answer, pickle_out)
 pickle_out.close()
+"""
